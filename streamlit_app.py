@@ -33,7 +33,7 @@ with st.sidebar:
     st.markdown('📖 Learn how to build this app in this [blog](https://blog.streamlit.io/how-to-build-a-llama-2-chatbot/)!')
 
 # Load JSON file with training data
-json_file_path = 'path/to/your/json_file.json'
+json_file_path = 'faq.json'
 
 def load_json(file_path):
     with open(file_path, 'r') as file:
