@@ -4,20 +4,14 @@ import os
 import json
 import re
 
-st.set_page_config(
-    page_title="Blogga Chatbot",
-    layout="centered",
-    initial_sidebar_state="expanded",
-)
+# App title
+st.set_page_config(page_title="🦙💬 Llama 2 Chatbot")
 
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-st.button('Clear Chat History', on_click=clear_chat_history)
+st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
-
-
-st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h3>", unsafe_allow_html=True)
-
+st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blogga Chat Bot</h3>", unsafe_allow_html=True)
 
 # Load FAQs
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
@@ -50,6 +44,7 @@ def get_faq_response(prompt):
     
     return None
 
+# Replicate Credentials
 with st.sidebar:
     st.title('🦙💬 Llama 2 Chatbot')
     st.write('This chatbot is created using the open-source Llama 2 LLM model from Meta.')
@@ -83,3 +78,42 @@ if "messages" not in st.session_state.keys():
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
+
+
+# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
+def generate_llama2_response(prompt_input):
+    string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+    for dict_message in st.session_state.messages:
+        if dict_message["role"] == "user":
+            string_dialogue += "User: " + dict_message["content"] + "\n\n"
+        else:
+            string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
+    output = replicate.run(llm, 
+                           input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
+                                  "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
+    return output
+
+# User-provided prompt
+if prompt := st.chat_input(disabled=not replicate_api):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
+
+# Generate a new response if last message is not from assistant
+if st.session_state.messages[-1]["role"] != "assistant":
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            # Check if prompt matches any FAQ
+            faq_response = get_faq_response(prompt)
+            if faq_response:
+                response = [faq_response]
+            else:
+                response = generate_llama2_response(prompt)
+            placeholder = st.empty()
+            full_response = ''
+            for item in response:
+                full_response += item
+                placeholder.markdown(full_response)
+            placeholder.markdown(full_response)
+    message = {"role": "assistant", "content": full_response}
+    st.session_state.messages.append(message)
