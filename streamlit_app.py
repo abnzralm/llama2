@@ -32,27 +32,20 @@ with st.sidebar:
     max_length = st.slider('max_length', min_value=32, max_value=128, value=120, step=8)
     st.markdown('📖 Learn how to build this app in this [blog](https://blog.streamlit.io/how-to-build-a-llama-2-chatbot/)!')
 
-    st.subheader('Upload JSON for Training')
-    json_file = st.file_uploader("Upload JSON File", type=["json"])
+# Load JSON file with training data
+json_file_path = 'path/to/your/json_file.json'
 
-# Function to load and parse JSON file
-def load_json(file):
-    if file is not None:
+def load_json(file_path):
+    with open(file_path, 'r') as file:
         data = json.load(file)
-        return data
-    return None
+    return data
 
-# Load JSON data if file is uploaded
-json_data = load_json(json_file)
+# Load JSON data
+json_data = load_json(json_file_path)
 
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-
-# If JSON data is loaded, add it to the chat history
-if json_data:
-    for entry in json_data:
-        st.session_state.messages.append(entry)
 
 # Display or clear chat messages
 for message in st.session_state.messages:
@@ -63,18 +56,12 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
-# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
-def generate_llama2_response(prompt_input):
-    string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
-    for dict_message in st.session_state.messages:
-        if dict_message["role"] == "user":
-            string_dialogue += "User: " + dict_message["content"] + "\n\n"
-        else:
-            string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
-    output = replicate.run(llm, 
-                           input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
-                                  "temperature": temperature, "top_p": top_p, "max_length": max_length, "repetition_penalty": 1})
-    return output
+# Function for generating response from JSON data
+def generate_response_from_json(prompt_input):
+    for item in json_data:
+        if item['question'].lower() == prompt_input.lower():
+            return item['answer']
+    return "I'm sorry, I don't have an answer for that."
 
 # User-provided prompt
 if prompt := st.chat_input(disabled=not replicate_api):
@@ -86,12 +73,8 @@ if prompt := st.chat_input(disabled=not replicate_api):
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = generate_llama2_response(prompt)
+            response = generate_response_from_json(prompt)
             placeholder = st.empty()
-            full_response = ''
-            for item in response:
-                full_response += item
-                placeholder.markdown(full_response)
-            placeholder.markdown(full_response)
-    message = {"role": "assistant", "content": full_response}
+            placeholder.markdown(response)
+    message = {"role": "assistant", "content": response}
     st.session_state.messages.append(message)
