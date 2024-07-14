@@ -1,0 +1,10 @@
+{
+    "What is Blogga?": "Blogga is a simple social blogging app designed for easy sharing and interaction with blog posts.",
+   "How does authentication work on Blogga?": "Authentication on Blogga is handled through a robust login/signup system using Firebase. User credentials are securely stored and managed by Firebase.",
+   "What are the main features of Blogga?": "Blogga allows users to create, read, and interact with blog posts. It includes features for liking posts, adding comments, and managing user profiles.",
+   "Is Blogga suitable for advanced blogging features?": "Yes, Blogga provides advanced features such as real-time updates, notifications, and user authentication, all powered by Firebase.",
+   "How can I search for blogs on Blogga?": "You can search for blogs using the search bar located at the top of the homepage. Simply enter keywords related to the blog title to find relevant posts.",
+   "Can I create a new blog post on Blogga?": "Yes, registered users can create new blog posts by navigating to the 'New Blog' section after logging in.",
+   "Is there a mobile app version of Blogga available?": "Currently, Blogga is accessible through web browsers only. There is no dedicated mobile app version at this time.",
+   "How can I contact support for Blogga?": "For support inquiries related to Blogga, please use the contact form available on the website."
+}
