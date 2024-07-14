@@ -2,11 +2,54 @@ import streamlit as st
 import replicate
 import os
 import json
+import re
 
-# App title
-st.set_page_config(page_title="🦙💬 Llama 2 Chatbot")
+st.set_page_config(
+    page_title="Blogga Chatbot",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
 
-# Replicate Credentials
+def clear_chat_history():
+    st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
+st.button('Clear Chat History', on_click=clear_chat_history)
+
+
+
+st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h3>", unsafe_allow_html=True)
+
+
+# Load FAQs
+faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
+
+try:
+    with open(faq_file_path, 'r') as f:
+        faqs = json.load(f)
+except FileNotFoundError:
+    st.error(f"FAQ file not found at path: {faq_file_path}")
+    faqs = {}
+
+def get_faq_response(prompt):
+    if not prompt:
+        return None
+    
+    clean_prompt = re.sub(r'[^\w\s]', '', prompt.strip())
+
+    # First, try to find an exact match
+    for question, answer in faqs.items():
+        clean_question = re.sub(r'[^\w\s]', '', question.strip())
+        if clean_prompt.lower() == clean_question.lower():
+            return answer
+
+    # If no exact match, look for keyword-based matching
+    for question, answer in faqs.items():
+        clean_question = re.sub(r'[^\w\s]', '', question.strip())
+        pattern = re.compile(re.escape(clean_prompt), re.IGNORECASE)
+        if pattern.search(clean_question):
+            return answer
+    
+    return None
+
 with st.sidebar:
     st.title('🦙💬 Llama 2 Chatbot')
     st.write('This chatbot is created using the open-source Llama 2 LLM model from Meta.')
@@ -32,17 +75,6 @@ with st.sidebar:
     max_length = st.slider('max_length', min_value=32, max_value=128, value=120, step=8)
     st.markdown('📖 Learn how to build this app in this [blog](https://blog.streamlit.io/how-to-build-a-llama-2-chatbot/)!')
 
-# Load JSON file with training data
-json_file_path = 'faq.json'
-
-def load_json(file_path):
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-    return data
-
-# Load JSON data
-json_data = load_json(json_file_path)
-
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
@@ -51,30 +83,3 @@ if "messages" not in st.session_state.keys():
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
-
-def clear_chat_history():
-    st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
-
-# Function for generating response from JSON data
-def generate_response_from_json(prompt_input):
-    for item in json_data:
-        if item['question'].lower() == prompt_input.lower():
-            return item['answer']
-    return "I'm sorry, I don't have an answer for that."
-
-# User-provided prompt
-if prompt := st.chat_input(disabled=not replicate_api):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
-
-# Generate a new response if last message is not from assistant
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            response = generate_response_from_json(prompt)
-            placeholder = st.empty()
-            placeholder.markdown(response)
-    message = {"role": "assistant", "content": response}
-    st.session_state.messages.append(message)
